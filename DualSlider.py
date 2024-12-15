@@ -123,6 +123,7 @@ class DualSliderPro(tk.Frame):
         super().__init__(parent)
         self.Range = Range
         self.step = step
+        self.call_fun = None
 
         # 创建主框架布局
         self.spin_min = ttk.Spinbox(self, from_=Range[0], to=Range[1], increment=step, width=4, font=("Arial", 13),
@@ -160,12 +161,20 @@ class DualSliderPro(tk.Frame):
         self.spin_min.config(font=new_font)
         self.spin_max.config(font=new_font)
 
-    @staticmethod
-    def __on_spin_change(spin, set_fun):
+    def __on_spin_change(self, spin, set_fun):
         spin.set(set_fun(float(spin.get())))
+        str_tmp = "min"
+        if spin == self.spin_max:
+            str_tmp = "max"
+        if self.call_fun is not None:
+            self.call_fun(str_tmp, float(spin.get()))
 
     def __on_slider_change(self, slider_type, value):
         if slider_type == "min":
             self.spin_min.set(value)
+            if self.call_fun is not None:
+                self.call_fun("min", float(self.spin_min.get()))
         elif slider_type == "max":
             self.spin_max.set(value)
+            if self.call_fun is not None:
+                self.call_fun("max", float(self.spin_max.get()))
