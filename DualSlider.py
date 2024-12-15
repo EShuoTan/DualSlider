@@ -98,11 +98,11 @@ class DualSlider(tk.Frame):
         self.__draw_sliderMax()
         return self.sliderMax_val
 
-    def get_min_val(self):
-        return self.sliderMin_val
-
-    def get_max_val(self):
-        return self.sliderMax_val
+    def get_val(self, slider_str):
+        if slider_str == "min":
+            return self.sliderMin_val
+        elif slider_str == "max":
+            return self.sliderMax_val
 
     @staticmethod
     def __interp(event_val, src_range, dst_range):
@@ -127,15 +127,15 @@ class DualSliderPro(tk.Frame):
 
         # 创建主框架布局
         self.spin_min = ttk.Spinbox(self, from_=Range[0], to=Range[1], increment=step, width=4, font=("Arial", 13),
-                                    command=lambda: self.__on_spin_change(self.spin_min, self.slider.set_min_val))
-        self.spin_min.bind("<Return>", lambda event: self.__on_spin_change(self.spin_min, self.slider.set_min_val))
+                                    command=lambda: self.__on_spin_change("min", self.spin_min.get()))
+        self.spin_min.bind("<Return>", lambda event: self.__on_spin_change("min", self.spin_min.get()))
 
         self.slider = DualSlider(self, Range, step, SlideColor, BarColor)
         self.slider.call_fun = self.__on_slider_change
 
         self.spin_max = ttk.Spinbox(self, from_=Range[0], to=Range[1], increment=step, width=4, font=("Arial", 13),
-                                    command=lambda: self.__on_spin_change(self.spin_max, self.slider.set_max_val))
-        self.spin_max.bind("<Return>", lambda event: self.__on_spin_change(self.spin_max, self.slider.set_max_val))
+                                    command=lambda: self.__on_spin_change("max", self.spin_max.get()))
+        self.spin_max.bind("<Return>", lambda event: self.__on_spin_change("max", self.spin_max.get()))
 
         self.spin_min.grid(row=0, column=0, padx=(0, 2), pady=0)
         self.slider.grid(row=0, column=1, padx=(0, 2), pady=0, sticky="nsew")
@@ -146,8 +146,8 @@ class DualSliderPro(tk.Frame):
         self.grid_columnconfigure(2, weight=1)
 
         # 初始化 Spinbox 值
-        self.spin_min.set(self.slider.get_min_val())
-        self.spin_max.set(self.slider.get_max_val())
+        self.spin_min.set(self.slider.get_val("min"))
+        self.spin_max.set(self.slider.get_val("max"))
 
         # 绑定窗口大小变化事件
         self.bind("<Configure>", self.__update_size)
@@ -161,20 +161,37 @@ class DualSliderPro(tk.Frame):
         self.spin_min.config(font=new_font)
         self.spin_max.config(font=new_font)
 
-    def __on_spin_change(self, spin, set_fun):
-        spin.set(set_fun(float(spin.get())))
-        str_tmp = "min"
-        if spin == self.spin_max:
-            str_tmp = "max"
+    def __on_spin_change(self, slider_str: str, val):
+        if not self.__isNumber(val):
+            val = self.slider.get_val(slider_str)
+        if slider_str == "min":
+            self.spin_min.set(self.slider.set_min_val(float(val)))
+        else:
+            self.spin_max.set(self.slider.set_max_val(float(val)))
         if self.call_fun is not None:
-            self.call_fun(str_tmp, float(spin.get()))
+            self.call_fun(slider_str, float(self.slider.get_val(slider_str)))
 
-    def __on_slider_change(self, slider_type, value):
-        if slider_type == "min":
+    @staticmethod
+    def __isNumber(val):
+        try:
+            float(val)  # 尝试将字符串转换为浮点数
+            return True
+        except ValueError:
+            return False
+
+    def __on_slider_change(self, slider_str, value):
+        if slider_str == "min":
             self.spin_min.set(value)
-            if self.call_fun is not None:
-                self.call_fun("min", float(self.spin_min.get()))
-        elif slider_type == "max":
+        else:
             self.spin_max.set(value)
-            if self.call_fun is not None:
-                self.call_fun("max", float(self.spin_max.get()))
+        if self.call_fun is not None:
+            self.call_fun(slider_str, value)
+
+    def set_val(self, slider_str, val):
+        self.__on_spin_change(slider_str, val)
+
+    def get_val(self, slider_str=None):
+        if slider_str is None:
+            return tuple([self.slider.sliderMin_val, self.slider.sliderMax_val])
+        return self.slider.get_val(slider_str)
+
